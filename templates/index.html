@@ -1,0 +1,254 @@
+{% if wpt %}
+<html>
+	<head>
+		<link href="static/waypointviewer.css" rel="stylesheet" type="text/css"/>
+		<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js"></script>
+		<script type="text/javascript" src="http://maps.google.com/maps/api/js?libraries=geometry&sensor=false"></script>
+		<script type="text/javascript" src="static/richmarker-compiled.js"></script>
+		<script type="text/javascript" src="static/sprintf-0.7-beta1.js"></script>
+		<script type="text/javascript" src="static/task.js"></script>
+		<script type="text/javascript" src="waypointviewer.js?kml={{ kml|urlencode }}&logo={{ logo|urlencode }}&tsk={{ tsk|urlencode }}&wpt={{ wpt|urlencode }}"></script>
+		<title>{% if title %}{{ title|escape }} - {% endif %}Waypoint Viewer</title>
+	</head>
+	<body>
+		<div id="map" style="width: 100%; height: 100%">Loading...</div>
+		<div id="fullScreenButton" class="buttonOuter" style="display: none; margin: 5px;" title="Show full screen">
+			<div class="buttonInner">
+				<img src="static/fullscreen.png" height="13" width="13"/>
+			</div>
+		</div>
+		<div id="taskBoardButton" class="buttonOuter" style="display: none; margin: 5px;" title="Show task board">
+			<div class="buttonInner">
+				<img src="static/taskboard.png" height="13" width="13"/>
+			</div>
+		</div>
+		<div id="taskBoardContent" class="taskBoardContent" style="display: none">
+			<div class="tsk-top">
+				<table border="0" cellpadding="0" cellspacing="0" width="100%">
+					<colgroup>
+						<col width="35"/>
+						<col width="*"/>
+						<col width="50"/>
+					</colgroup>
+					<tbody>
+						<tr>
+							<td><div id="flag"></div></td>
+							<td class="compName">{{ title|escape }}</td>
+							<td id="taskName" class="taskId"></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="tsk-1">
+				<table class="tb-details" cellpadding="1" cellspacing="1">
+					<colgroup>
+						<col width="10%">
+						<col width="40%">
+						<col width="*">
+						<col width="10%">
+						<col width="20%">
+					</colgroup>
+					<tbody>
+						<tr>
+							<td class="tbl-name">Venue:</td>
+							<td></td>
+							<td> </td>
+							<td class="tbl-name">Date:</td>
+							<td class="tbl-val-r"></td>
+						</tr>
+						<tr>
+							<td class="tbl-name">Site:</td>
+							<td></td>
+							<td> </td>
+							<td class="tbl-name">Type:</td>
+							<td id="taskType" class="tbl-val-r"></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="tsk-2">
+				<table class="tb-details" cellpadding="1" cellspacing="1">
+					<colgroup>
+						<col width="20%">
+						<col width="10%">
+						<col width="*">
+						<col width="20%">
+						<col width="10%">
+					</colgroup>
+					<tbody>
+						<tr>
+							<td class="tbl-name">Window Open:</td>
+							<td id="taskWindowOpen" class="tbl-val-r"></td>
+							<td> </td>
+							<td class="tbl-name">Window Close:</td>
+							<td id="taskWindowClose" class="tbl-val-r"></td>
+						</tr>
+						<tr>
+							<td class="tbl-name">Start:</td>
+							<td id="taskStartOpen" class="tbl-val-r"></td>
+							<td> </td>
+							<td class="tbl-name">Task Deadline:</td>
+							<td id="taskTaskClose" class="tbl-val-r"></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="tsk-1">
+				<table class="tb-points" cellspacing="0" cellpadding="2">
+					<colgroup>
+						<col width="15%">
+						<col width="10%">
+						<col width="25%">
+						<col width="25%">
+						<col width="25%">
+					</colgroup>
+					<thead>
+						<tr>
+							<td>Point</td>
+							<td>Name</td>
+							<td align="right">Radius</td>
+							<td align="right">Leg Dist</td>
+							<td align="right">Goal Dist</td>
+						</tr>
+					</thead>
+					<tbody>
+						<tr id="turnpointRow" style="display: none;">
+							<td id="turnpointIndex"></td>
+							<td id="turnpointId"></td>
+							<td id="turnpointRadius" align="right"></td>
+							<td id="turnpointDistance" align="right"></td>
+							<td id="turnpointGoalDistance" align="right"></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<div class="tsk-bottom">
+				<table class="tsk-tb1" cellpadding="1" cellspacing="1">
+					<colgroup>
+						<col width="27%">
+						<col width="20%">
+						<col width="*">
+						<col width="27%">
+						<col width="20%">
+					</colgroup>
+					<tbody>
+						<tr>
+							<td class="tbl-name">GPS Distance</td>
+							<td id="taskDistance" class="tbl-val-r"></td>
+							<td> </td>
+							<td class="tbl-name">Task Distance</td>
+							<td class="tbl-val-r"><b id="taskShortestDistance"></b></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<div id="turnpointInfoWindowContent" class="turnpointInfoWindowContent" style="display: none;">
+			<table class="infoTable" border="0" cellpadding="2" cellspacing="0">
+				<colgroup>
+					<col width="25%">
+					<col width="45%">
+					<col width="30%">
+				</colgroup>
+				<tbody>
+					<tr>
+						<th colspan="2" class="tblTitle"><b>Turnpoint <span id="turnpointIndex"></span></b><span id="turnpointId"></span></th>
+						<th class="tblCaption"><span id="turnpointRadius"></span> m</th>
+					</tr>
+					<tr>
+						<td class="tblLabel">Leg:</td>
+						<td colspan="2"><span></span> km</td>
+					</tr>
+					<tr>
+						<td class="tblLabel">To Next:</td>
+						<td colspan="2"><span></span> km</td>
+					</tr>
+					<tr>
+						<td class="tblLabel">To Goal:</td>
+						<td colspan="2"><span></span> km</td>
+					</tr>
+					<tr>
+						<td class="tblLabel">Center:</td>
+						<td colspan="2"><span id="turnpointLatitude"></span>, <span id="turnpointLongitude"></span></td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+		<div id="waypointInfoWindowContent" class="waypointInfoWindowContent" style="display: none">
+			<table>
+				<tr>
+					<th>ID:</th>
+					<td id="waypointIdValue"></td>
+				</tr>
+				<tr id="waypointDescription">
+					<th>Description:</th>
+					<td id="waypointDescriptionValue"></td>
+				</tr>
+				<tr>
+					<th>Latitude:</th>
+					<td id="waypointLatitudeValue"></td>
+				</tr>
+				<tr>
+					<th>Longitude:</th>
+					<td id="waypointLongitudeValue"></td>
+				</tr>
+				<tr id="waypointElevation">
+					<th>Elevation:</th>
+					<td id="waypointElevationValue"></td>
+				</tr>
+				<tr id="waypointRadius">
+					<th>Radius:</th>
+					<td id="waypointRadiusValue"></td>
+				</tr>
+			</table>
+		</div>
+		<div id="waypointRichMarkerContent" class="waypointRichMarkerContent" style="display: none">
+			<div id="waypointLabel" class="waypointLabel"></div>
+			<div style="text-align: center;"><img src="static/arrow.png" width="5" height="3"/></div>
+		</div>
+	</body>
+</html>
+{% else %}
+<html>
+	<head>
+		<title>Waypoint Viewer</title>
+	</head>
+	<body>
+		<h1>Waypoint Viewer</h1>
+		<hr/>
+		<p>Create your waypoint map now:</p>
+		<form action="/" method="get">
+			<ol>
+				<li>
+					(Required) Link to waypoint file hosted on your webserver:<br/>
+					<input name="wpt" size="80" type="text" value="{{ wpt|escape }}"/><br/>
+					Example: <i>http://www.slovenia-pgopen.com/downloads/Kobarid_Lijak.wpt</i><br/>
+					CompeGPS, FormatGEO, OziExplorer and SeeYou formats supported
+				</li>
+				<li>
+					(Optional) Title:<br/>
+					<input name="title" size="80" type="text" value="{{ title|escape }}"/><br/>
+					Example: <i>British Open Slovenia 2010</i>
+				</li>
+				<li>
+					(Optional) Logo hosted on your websever:<br/>
+					<input name="logo" size="80" type="text" value="{{ logo|escape }}"/><br/>
+				</li>
+				<li>
+					(Optional) Link to KML overlay hosted on your webserver:<br/>
+					<input name="kml" size="80" type="text" value="{{ kml|escape }}"/>
+				</li>
+				<li>
+					(Optional) Task description:<br/>
+					<input name="tsk" size="80" type="text" value="{{ tsk|escape }}"/>
+				</li>
+				<li>
+					<input type="submit" value="Go"/>
+				</li>
+			</ol>
+		</form>
+		<hr/>
+		<p><a href="http://github.com/twpayne/waypointviewer">http://github.com/twpayne/waypointviewer</a></p>
+	</body>
+</html>
+{% endif %}
